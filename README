@@ -1,0 +1,144 @@
+
+////////////////////////////  TEMA 3 - AST \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+Fatu Miruna-Maria 
+321CA
+
+================================ iocla_atoi =================================
+
+	Rol: converteste un sir de caractere in numar
+	-> In registrul edi se retine sirul de caractere ce urmeaza sa fie analizat
+	-> Initial, se verifica primul caracter pentru a determina daca numarul 
+	este negativ sau pozitiv
+		- pentru numerele negative, se introduce "1" pe stiva (is_signed)
+		- pentru numerele pozitive, se introduce "0" pe stiva
+
+	-> Folosind intructiunea loop (cycle), sirul de caractere va fi parcurs
+	byte cu byte ("cifra cu cifra")
+	-> Ebx retine rezultatul temporar obtinut in urma ultimei iteratii 
+	(eticheta multiply)
+	-> Pentru a obtine valoarea numerica a caracterului curent se scade 0x30
+	-> Se adauga valoarea numerica a caracterului curent la rezultatul obtinut
+	in urma inmultirii cu 10 (in ebx)
+	-> Dupa ce toate caracterele au fost analizate, se va verifica daca numarul
+	creat trebuie sa fie negativ sau pozitiv
+	-> Verificarea se face printr-un pop al elementului introdus la inceputul
+	functiei
+		- daca elementul este 0, numarul creat (din ebx) ramane neschimbat
+		- daca elementul este 1, se acceseaza eticheta set_signed_number
+	-> In final, numarul creat va fi stocat in eax
+
+Etichete:
+
+	%%%% is_signed %%%%
+	- daca se acceseaza aceasta eticheta inseamna ca este un numar cu semn
+	- se introduce "1" pe stiva
+	- se incrementeaza edi pentru a trece peste caracterul "-"
+
+	%%%% multiply %%%%
+	- la fiecare iteratie, rezultatul din ebx, va fi inmultit cu 10
+	- inmultirea se va realiza prin adunarea repetatata a numarului cu ajutorul
+	intructiunii loop (eticheta addition)
+
+	%%%% set_signed_number %%%%
+	- daca s-a intrat in aceasta eticheta inseamna ca se doreste valoarea
+	negativa a numarului curent
+	- se efectueaza 0 - numar(stocat in ebx)
+
+=================================== create_tree ==============================
+
+	Rol: creeaza un arbore sintactic folosind sirul de caractere din stiva
+
+	Pentru crearea arborelui, am utilizat 3 functii:
+		-> create_tree - functia principala
+		-> get_data
+		-> create_new_node
+
+------------------------------------- create_tree -----------------------------
+
+	-> Registrul edi va retine sirul de caractere din care se vor extrage 
+	elemente (numere sau operanzi) pentru a construi arborele
+
+	-> Se apeleaza functia create_new_node pentru a crea radacina arborelui
+	-> Dupa apelul functiei, in eax se va afla adresa nodului radacina
+	-> Se retine adresa nodului radacina in root
+	-> Pentru ca mereu primul element din sirul de caractere va fi un operand,
+	se va incepe recursivitatea pe partea stanga a arborelui (recursive_left)
+
+Etichete:
+	
+	%%%% recursive_left %%%%
+	- se extrage din stiva adresa nodului precedent- node(nodul cu care se va
+	face linkarea cu un nou nod stang)
+	- se adauga 4 adresei nodului precedent (se obtine adresa la care va fi 
+	adaugat nodul stang)
+	- prin apelul functiei create_new_node se va crea nodul stang care urmeaza 
+	sa fie adaugat
+	- in urma apelului functiei de creare a nodului, in eax va fi stocata
+	adresa nodului nou creat
+	- se creeaza legatura dintre nodul precedent si nodul curent 
+	(node <-> left_node)
+	- se extrage continutul de la char* data pentru a verfica daca este un 
+	numar sau operand
+		- daca este operand, se acceseaza eticheta is_operand
+		- daca este numar, se acceseaza eticheta is_number
+
+	%%%% recursive_right %%%%
+	- se extrage din stiva adresa nodului precedent -node (nodul cu care se va
+	face linkarea cu un nou nod drept)
+	- se adauga 8 adresei nodului precedent intrucat aceea va fi adresa unde se
+	va adauga nodul drept
+	- se creeaza un nou nod prin apelul functiei create_new_node
+	- se verifica daca este libera adresa unde va fi linkat nodul nou creat
+	- daca adresa este deja ocupata cu alt nod, se acceseaza eticheta is_full
+	- dupa ce a fost gasita o adresa valida(libera), se face linkarea 
+	(node <-> right_node)
+	- se verifica daca continutul de la char* data din noul nod creat este
+	numar sau operand
+		- daca este operand, se acceseaza eticheta is_operand
+		- daca este numar, se acceseaza eticheta is_number
+
+	%%%% is_operandL %%%%
+	- se introduce pe stiva adresa nodului nou creat, intrucat adresa sa va
+	mai fi folosita
+	- se continua recursivitatea pe nodul stand
+
+	%%%% is_numberL %%%%
+	- se continua recursivitatea pe nodul drept
+
+	%%%% is_full %%%%
+	- daca a fost accesata aceasta eticheta inseamna ca adresa la care ar
+	trebui linkat un nou nod drept este deja ocupata
+	- se extrage din stiva adresa unui nou nod pentru a se reface verificarea
+	- se accseaza aceasta eticheta pana la gasirea unei adrese valide
+	(neocupata)
+
+----------------------------------- get_data ----------------------------------
+
+	Rol:  -creeaza si aloca memorie pentru char* data
+		  -intoarce adresa la care este stocat char* data	
+
+	-> Se extrage succesiv cate un caracter din string-ul din input, fiind
+	inserat si in stiva
+	-> Se repeta extragerea caracterelor pana la intalnirea delimitatorului
+	-> Se aloca memorie pentru char* data
+	-> Se creeza sirul de caractere data (create_string)
+
+
+Etichete:
+	
+	%%%% create_string %%%%
+	- la adresa intoarsa in urma alocarii de memorie se adauga fiecare 
+	caracter valid introdus in stiva
+
+----------------------------- create_new_node ---------------------------------
+
+	Rol:  -creeaza un nou nod ce contine char* data si pointeri catre nodul
+		  din stanga si nodul din dreapta
+	      - intoarce adresa noului nod creat
+
+	-> Prin apelul functiei get_data se obtine adresa si sirul de 
+	caractere char* data
+	-> Se aloca memorie pentru un nou nod (node)
+	-> Se efectueaza linkarea node <-> char *data
+	
+-------------------------------------------------------------------------------
